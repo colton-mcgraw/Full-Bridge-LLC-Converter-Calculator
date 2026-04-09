@@ -1,0 +1,70 @@
+name: Build Portable Artifacts
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install build deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+
+      - name: Build app (onefile)
+        shell: bash
+        run: |
+          python - << 'PY'
+          import os
+          import subprocess
+          import sys
+
+          sep = ';' if os.name == 'nt' else ':'
+          cmd = [
+              sys.executable,
+              '-m',
+              'PyInstaller',
+              '--noconfirm',
+              '--clean',
+              '--windowed',
+              '--onefile',
+              '--name',
+              'FB-LLC-Calc',
+              '--add-data',
+              f'Power Inductors.csv{sep}.',
+          ]
+
+          if os.name == 'nt' and os.path.exists('assets/icon.ico'):
+              cmd.extend(['--icon', 'assets/icon.ico'])
+
+          cmd.append('llc_calc.py')
+          print('Running:', ' '.join(cmd))
+          subprocess.check_call(cmd)
+          PY
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FB-LLC-Calc-${{ matrix.os }}
+          path: |
+            dist/*
+            README.md
+          if-no-files-found: error
