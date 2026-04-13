@@ -141,7 +141,7 @@ jobs:
           merge-multiple: true
 
       - name: Publish GitHub Release with assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: FB LLC Calc v${{ steps.version.outputs.version }}
           body_path: release_notes.md
